@@ -68,8 +68,9 @@ def adjustImage(file_path, image_type, report):
             report.write(str(img.size).replace(', ', 'x') + ';' + '\n') """
 
             report.write(str(os.path.getsize(file_path)) + ';')
-            subprocess.call('pngquant --quality=' + png_quality + ' --speed 10 --ext _save.png --force ' + file_path, shell=True)
+
             try:
+                subprocess.call('pngquant --quality=' + png_quality + ' --speed 10 --ext _save.png --force ' + file_path, shell=True)
                 move(file_path[:-4] + '_save.png', file_path)
             except:
                 print("PNG image could not be compressed due to quality reasons!")
@@ -77,14 +78,17 @@ def adjustImage(file_path, image_type, report):
             # REDUCE RESOLUTION
             new_file_size = os.path.getsize(file_path)
             if png_resize and new_file_size > max_png_size * 1000:
-                print("Resizing next image:")
-                img = Image.open(file_path)
-                base = resize_factor # e.g. 1 = original size, 0.5 = half size
-                hsize = int((float(img.size[1] * base)))
-                vsize = int((float(img.size[0] * base)))
-                img = img.resize((vsize, hsize), Image.ANTIALIAS)
-                img.save(file_path, optimize=True)
-                new_file_size = os.path.getsize(file_path)
+                try:
+                    print("Resizing next image:")
+                    img = Image.open(file_path)
+                    base = resize_factor # e.g. 1 = original size, 0.5 = half size
+                    hsize = int((float(img.size[1] * base)))
+                    vsize = int((float(img.size[0] * base)))
+                    img = img.resize((vsize, hsize), Image.ANTIALIAS)
+                    img.save(file_path, optimize=True)
+                    new_file_size = os.path.getsize(file_path)
+                except:
+                    print("PNG could not be resized!")
 
             report.write(str(new_file_size) + ';')
             report.write(str(img.size).replace(', ', 'x') + ';' + '\n')
@@ -127,11 +131,15 @@ def adjustAudioVideo(file_path, file_type, report):
     start_time = time.time()
     report.write(str(os.path.getsize(file_path)) + ';')
     if file_type == 'mp4':
-        video = subprocess.run('ffmpeg.exe -i %s -b %s %s -y' % (file_path, video_bitrate, file_path))
+        video = subprocess.run('ffmpeg.exe -i %s -b %s %s -y' % (file_path, video_bitrate, file_path + '_new.mp4'))
+        os.remove(file_path)
+        os.rename(file_path + '_new.mp4', file_path)
         #video_libx264 = subprocess.run('ffmpeg -i %s -vcodec libx264 -b %s %s -y' % (file_path, video_bitrate, file_path))
         report.write(str(os.path.getsize(file_path)) + ';')
     elif file_type == 'mp3':
-        audio = subprocess.run('ffmpeg -i %s -map 0:a:0 -b:a %s %s' % (file_path, audio_bitrate, file_path))
+        audio = subprocess.run('ffmpeg -i %s -map 0:a:0 -b:a %s %s' % (file_path, audio_bitrate, file_path + '_new.mp3'))
+        os.remove(file_path)
+        os.rename(file_path + '_new.mp3', file_path)
         report.write(str(os.path.getsize(file_path)) + ';')
     # SCALE: -s 720x480
     # SCALE based on input size (make it half)
@@ -165,6 +173,7 @@ def checkImages(extracted_path, report):
                     file_path = os.path.join(root, file)
                     print(file_path)
                     report.write(file_path + ';')
+                    adjustAudioVideo(file_path, "mp4", report)
                 else:
                     print("VIDEO DETECTED: " + str(file_path))
                     report.write('WARNING, VIDEO FILE FOUND (mp4). File size;' + str(os.path.getsize(file_path)) + '\n')
