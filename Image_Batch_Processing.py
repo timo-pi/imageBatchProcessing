@@ -33,14 +33,17 @@ audio_bitrate = config.get('section_a', 'audio_bitrate')
 png_quality = config.get('section_a', 'png_quality')
 max_png_size = int(config.get('section_a', 'max_png_size'))
 
-def extractScorm(zip_file):
+def extractScorm(zip_file, extension):
     # btn_select.config(state="disabled")
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         filename = os.path.basename(zip_file)
         dirname = os.path.dirname(zip_file)
         #extract_path = os.path.join(dirname, extracted_files_directory, filename)
         extract_path = os.path.join(extracted_files_directory, filename)
-        extracted_scorm_path = extract_path[:-4]
+        if extension == "zip":
+            extracted_scorm_path = extract_path[:-4]
+        else:
+            extracted_scorm_path = extract_path[:-6]
         zip_ref.extractall(extracted_scorm_path)
         return extracted_scorm_path
 
@@ -198,7 +201,16 @@ def zipNewPackage(dir_name, extension):
     print("Compressing files, please wait...")
     current_cwd = os.getcwd()
     os.chdir(Path(dir_name).parent)
-    shutil.make_archive(os.path.basename(dir_name), extension, Path(dir_name))
+    if extension == "zip":
+        shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
+        shutil.rmtree(dir_name)
+    elif extension == "story":
+        print(f"*** dir_name: {dir_name} ***")
+        print(f"*** base_name: {os.path.basename(dir_name)} ***")
+        shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
+        pre, ext = os.path.splitext(dir_name + ".zip")
+        os.rename(dir_name + ".zip", pre + ".story")
+        shutil.rmtree(dir_name)
     os.chdir(current_cwd)
 
 def compressScormPackages(path, report):
@@ -208,11 +220,11 @@ def compressScormPackages(path, report):
             print(filedir)
             if file.endswith('.zip'):
                 #file_path = path + str(file)
-                extracted_path = extractScorm(filedir)
+                extracted_path = extractScorm(filedir, "zip")
                 checkImages(extracted_path, report)
                 zipNewPackage(extracted_path, "zip")
             elif file.endswith('.story'):
-                extracted_path = extractScorm(filedir)
+                extracted_path = extractScorm(filedir, "story")
                 checkImages(extracted_path, report)
                 zipNewPackage(extracted_path, "story")
 
