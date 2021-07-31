@@ -92,11 +92,10 @@ def adjustImage(file_path, image_type, report):
                     new_file_size = os.path.getsize(file_path)
                 except:
                     print("PNG could not be resized!")
-
+                    report.write('\n')
             report.write(str(new_file_size) + ';')
-            report.write(str(img.size).replace(', ', 'x') + ';' + '\n')
-
-        elif image_type == 'jpg':
+            report.write(str(img.size).replace(', ', 'x'))
+        if image_type == 'jpg':
             report.write("JPG;" + str(img.size).replace(', ', 'x') + ';')
             global jpg_resize
             if jpg_resize == True:
@@ -110,7 +109,7 @@ def adjustImage(file_path, image_type, report):
             #print("JPG new file size: " + str(os.path.getsize(file_path)))
             #print("New resolution: " + str(img.size))
             report.write(str(os.path.getsize(file_path)) + ';')
-            report.write(str(img.size).replace(', ', 'x') + ';' + '\n')
+            report.write(str(img.size).replace(', ', 'x') + '\n')
 
         elif image_type == 'gif':
             report.write("GIF;" + str(img.size).replace(', ', 'x') + ';')
@@ -126,24 +125,29 @@ def adjustImage(file_path, image_type, report):
             #print("GIF new file size: " + str(os.path.getsize(file_path)))
             #print("New resolution: " + str(img.size))
             report.write(str(os.path.getsize(file_path)) + ';')
-            report.write(str(img.size).replace(', ', 'x') + ';' + '\n')
+            report.write(str(img.size).replace(', ', 'x') + '\n')
         else:
-            print("File size < 100 Bytes or resolution < 32x32 pixels")
+            report.write('\n')
+    else:
+        report.write('This file was skipped due to resize settings;\n')
 
 def adjustAudioVideo(file_path, file_type, report):
     start_time = time.time()
-    report.write(str(os.path.getsize(file_path)) + ';')
     if file_type == 'mp4':
+        report.write('mp4; ;')
+        report.write(str(os.path.getsize(file_path)) + ';')
         video = subprocess.run('ffmpeg.exe -i %s -b %s %s -y' % (file_path, video_bitrate, file_path + '_new.mp4'))
         os.remove(file_path)
         os.rename(file_path + '_new.mp4', file_path)
         #video_libx264 = subprocess.run('ffmpeg -i %s -vcodec libx264 -b %s %s -y' % (file_path, video_bitrate, file_path))
-        report.write(str(os.path.getsize(file_path)) + ';')
+        report.write(str(os.path.getsize(file_path)) + '\n')
     elif file_type == 'mp3':
+        report.write('mp3; ;')
+        report.write(str(os.path.getsize(file_path)) + ';')
         audio = subprocess.run('ffmpeg -i %s -map 0:a:0 -b:a %s %s' % (file_path, audio_bitrate, file_path + '_new.mp3'))
         os.remove(file_path)
         os.rename(file_path + '_new.mp3', file_path)
-        report.write(str(os.path.getsize(file_path)) + ';')
+        report.write(str(os.path.getsize(file_path)) + '\n')
     # SCALE: -s 720x480
     # SCALE based on input size (make it half)
     # ffmpeg -i input.avi -vf scale="iw/2:ih/2" output.avi
@@ -201,19 +205,24 @@ def zipNewPackage(dir_name, extension):
     print("Compressing files, please wait...")
     current_cwd = os.getcwd()
     os.chdir(Path(dir_name).parent)
-    if extension == "zip":
-        shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
-        shutil.rmtree(dir_name)
-    elif extension == "story":
-        print(f"*** dir_name: {dir_name} ***")
-        print(f"*** base_name: {os.path.basename(dir_name)} ***")
-        shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
-        pre, ext = os.path.splitext(dir_name + ".zip")
-        os.rename(dir_name + ".zip", pre + ".story")
-        shutil.rmtree(dir_name)
+    try:
+        if extension == "zip":
+            shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
+            print("cleanup...")
+            # delete unzipped files and directory
+            shutil.rmtree(dir_name)
+        elif extension == "story":
+            shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
+            pre, ext = os.path.splitext(dir_name + ".zip")
+            os.rename(dir_name + ".zip", pre + ".story")
+            print("cleanup...")
+            # delete unzipped files and directory
+            shutil.rmtree(dir_name)
+    except:
+        print(f"Error building package - package {os.path.basename(dir_name)} already exists!")
     os.chdir(current_cwd)
 
-def compressScormPackages(path, report):
+def compressPackages(path, report):
     for root, dirs, files in os.walk(path):
         for file in files:
             filedir = os.path.join(root, file)
@@ -246,7 +255,7 @@ if __name__ == '__main__':
 
     report_path = extracted_files_directory + '\\' + 'report.csv'
     report = open(report_path, "w")
-    report.write('file path;file type;original resolution;original file size;new file size;new resolution;\n')
-    compressScormPackages(path, report)
+    report.write('drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
+    compressPackages(path, report)
     report.close()
 
