@@ -193,12 +193,12 @@ def checkImages(extracted_path, report):
                 print("VIDEO DETECTED: " + str(file_path))
                 report.write('WARNING, VIDEO FILE FOUND (not mp4!). File size;' + str(os.path.getsize(file_path)) + '\n')
 
-def zipNewScorm(dir_name):
+def zipNewPackage(dir_name, extension):
     print("Creating new SCORM package in directory " + str(Path(dir_name)))
     print("Compressing files, please wait...")
     current_cwd = os.getcwd()
     os.chdir(Path(dir_name).parent)
-    shutil.make_archive(os.path.basename(dir_name), 'zip', Path(dir_name))
+    shutil.make_archive(os.path.basename(dir_name), extension, Path(dir_name))
     os.chdir(current_cwd)
 
 def compressScormPackages(path, report):
@@ -210,7 +210,12 @@ def compressScormPackages(path, report):
                 #file_path = path + str(file)
                 extracted_path = extractScorm(filedir)
                 checkImages(extracted_path, report)
-                zipNewScorm(extracted_path)
+                zipNewPackage(extracted_path, "zip")
+            elif file.endswith('.story'):
+                extracted_path = extractScorm(filedir)
+                checkImages(extracted_path, report)
+                zipNewPackage(extracted_path, "story")
+
 
     """    all_scorm_files = [f for f in listdir(path) if isfile(join(path, f))]
         for file in all_scorm_files:
