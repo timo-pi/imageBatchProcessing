@@ -214,12 +214,18 @@ def zipNewPackage(dir_name, extension):
         elif extension == "story":
             shutil.make_archive(os.path.basename(dir_name), "zip", Path(dir_name))
             pre, ext = os.path.splitext(dir_name + ".zip")
-            os.rename(dir_name + ".zip", pre + ".story")
+            try:
+                if os.path.exists(dir_name + ".story"):
+                    os.remove(dir_name + ".story")
+                    print(f"Existing file deleted: {dir_name + '.story'}")
+                os.rename(dir_name + ".zip", pre + ".story")
+            except:
+                print("Error renaming .zip in .story")
             print("cleanup...")
             # delete unzipped files and directory
             shutil.rmtree(dir_name)
     except:
-        print(f"Error building package - package {os.path.basename(dir_name)} already exists!")
+        print(f"Error building package - {os.path.basename(dir_name)}")
     os.chdir(current_cwd)
 
 def compressPackages(path, report):
@@ -251,11 +257,14 @@ if __name__ == '__main__':
     try:
         os.makedirs(extracted_files_directory)
     except:
-        print('Export directory already exists')
+        print('Export directory is present.')
+    try:
+        report_path = extracted_files_directory + '\\' + 'report.csv'
+        report = open(report_path, "w")
+        report.write('drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
+        compressPackages(path, report)
+        report.close()
+    except:
+        print("WARNING: report.csv is in use! Please close file and try again.")
 
-    report_path = extracted_files_directory + '\\' + 'report.csv'
-    report = open(report_path, "w")
-    report.write('drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
-    compressPackages(path, report)
-    report.close()
 
