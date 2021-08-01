@@ -16,14 +16,14 @@ import time
 config = ConfigParser()
 config.read('./config.ini')
 
-path = config.get('section_a', 'path')
-extracted_files_directory = config.get('section_a', 'extracted_files_directory')
+path = config.get('section_a', 'input_path')
+extracted_files_directory = config.get('section_a', 'output_path')
 min_file_size = int(config.get('section_a', 'min_file_size'))
 resize_factor = float(config.get('section_a', 'resize_factor'))
 compression = int(config.get('section_a', 'compression'))
 width = int(config.get('section_a', 'width'))
 height = int(config.get('section_a', 'height'))
-max_colors = config.getboolean('section_a', 'max_colors')
+#max_colors = config.getboolean('section_a', 'max_colors')
 jpg_resize = config.getboolean('section_a', 'jpg_resize')
 png_resize = config.getboolean('section_a', 'png_resize')
 gif_resize = config.getboolean('section_a', 'gif_resize')
@@ -32,6 +32,9 @@ video_bitrate = config.get('section_a', 'video_bitrate')
 audio_bitrate = config.get('section_a', 'audio_bitrate')
 png_quality = config.get('section_a', 'png_quality')
 max_png_size = int(config.get('section_a', 'max_png_size'))
+process_png = config.getboolean('section_a', 'process_png')
+process_jpg = config.getboolean('section_a', 'process_jpg')
+process_gif = config.getboolean('section_a', 'process_gif')
 
 def extractScorm(zip_file, extension):
     # btn_select.config(state="disabled")
@@ -156,19 +159,19 @@ def adjustAudioVideo(file_path, file_type, report):
 def checkImages(extracted_path, report):
     for root, directories, files in os.walk(extracted_path):
         for file in files:
-            if file.endswith('.jpg') or file.endswith('.jpeg') or file.endswith('.JPG') or file.endswith('.JPEG'):
+            if (file.endswith('.jpg') or file.endswith('.jpeg') or file.endswith('.JPG') or file.endswith('.JPEG')) and process_jpg:
                 # Create the full filepath
                 file_path = os.path.join(root, file)
                 print(file_path)
                 report.write(file_path + ';')
                 adjustImage(file_path, "jpg", report)
-            if file.endswith('.png') or file.endswith('.PNG'):
+            if (file.endswith('.png') or file.endswith('.PNG')) and process_png:
                 # Create the full filepath
                 file_path = os.path.join(root, file)
                 print(file_path)
                 report.write(file_path + ';')
                 adjustImage(file_path, "png", report)
-            if file.endswith('.gif') or file.endswith('.GIF'):
+            if (file.endswith('.gif') or file.endswith('.GIF')) and process_gif:
                 # Create the full filepath
                 file_path = os.path.join(root, file)
                 report.write(file_path + ';')
