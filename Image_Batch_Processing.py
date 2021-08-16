@@ -51,110 +51,104 @@ def extractScorm(zip_file, extension):
         return extracted_scorm_path
 
 def adjustImage(file_path, image_type, report):
-    img = Image.open(file_path) #.convert('RGB')
-    global width, height
-    png_file_size = os.path.getsize(file_path)
-    if png_file_size > min_file_size and img.size[0] >width and img.size[1] > height:
-        #print("Original Image Size: " + str(img.size))
-        if image_type == 'png':
-            report.write("PNG;" + str(img.size).replace(', ', 'x') + ';')
+    try:
+        img = Image.open(file_path) #.convert('RGB')
+        global width, height
+        png_file_size = os.path.getsize(file_path)
+        if png_file_size > min_file_size and img.size[0] >width and img.size[1] > height:
+            #print("Original Image Size: " + str(img.size))
+            if image_type == 'png':
+                report.write("PNG;" + str(img.size).replace(', ', 'x') + ';')
 
-            # REDUCE COLORS
-            """global max_colors
-            if img.getcolors(maxcolors=256) == None and max_colors == True:
-                print("Change color palette to 256!")
-                img = img.convert("P", palette=Image.ADAPTIVE, colors=256)
+                report.write(str(os.path.getsize(file_path)) + ';')
 
-            #print("PNG old size: " + str(os.path.getsize(file_path)))
-            report.write(str(os.path.getsize(file_path)) + ';')
-            img.save(file_path, optimize=True, quality=compression)
-            #print("PNG new file size: " + str(os.path.getsize(file_path)))
-            #print("PNG new resolution: " + str(img.size))
-            report.write(str(os.path.getsize(file_path)) + ';')
-            report.write(str(img.size).replace(', ', 'x') + ';' + '\n') """
-
-            report.write(str(os.path.getsize(file_path)) + ';')
-
-            try:
-                subprocess.call('pngquant --quality=' + png_quality + ' --speed 10 --ext _save.png --force ' + file_path, shell=True)
-                move(file_path[:-4] + '_save.png', file_path)
-            except:
-                print("PNG image could not be compressed due to quality reasons!")
-
-            # REDUCE RESOLUTION
-            new_file_size = os.path.getsize(file_path)
-            if png_resize and new_file_size > max_png_size * 1000:
                 try:
-                    print("Resizing next image:")
-                    img = Image.open(file_path)
+                    subprocess.call('pngquant --quality=' + png_quality + ' --speed 10 --ext _save.png --force ' + file_path, shell=True)
+                    move(file_path[:-4] + '_save.png', file_path)
+                except:
+                    print("PNG image could not be compressed due to quality reasons!")
+
+                # REDUCE RESOLUTION
+                new_file_size = os.path.getsize(file_path)
+                if png_resize and new_file_size > max_png_size * 1000:
+                    try:
+                        print("Resizing next image:")
+                        img = Image.open(file_path)
+                        base = resize_factor # e.g. 1 = original size, 0.5 = half size
+                        hsize = int((float(img.size[1] * base)))
+                        vsize = int((float(img.size[0] * base)))
+                        img = img.resize((vsize, hsize), Image.ANTIALIAS)
+                        img.save(file_path, optimize=True)
+                        new_file_size = os.path.getsize(file_path)
+                    except:
+                        print("PNG could not be resized!")
+                        report.write('\n')
+                report.write(str(new_file_size) + ';')
+                report.write(str(img.size).replace(', ', 'x'))
+            if image_type == 'jpg':
+                report.write("JPG;" + str(img.size).replace(', ', 'x') + ';')
+                global jpg_resize
+                if jpg_resize == True:
                     base = resize_factor # e.g. 1 = original size, 0.5 = half size
                     hsize = int((float(img.size[1] * base)))
                     vsize = int((float(img.size[0] * base)))
                     img = img.resize((vsize, hsize), Image.ANTIALIAS)
-                    img.save(file_path, optimize=True)
-                    new_file_size = os.path.getsize(file_path)
-                except:
-                    print("PNG could not be resized!")
-                    report.write('\n')
-            report.write(str(new_file_size) + ';')
-            report.write(str(img.size).replace(', ', 'x'))
-        if image_type == 'jpg':
-            report.write("JPG;" + str(img.size).replace(', ', 'x') + ';')
-            global jpg_resize
-            if jpg_resize == True:
-                base = resize_factor # e.g. 1 = original size, 0.5 = half size
-                hsize = int((float(img.size[1] * base)))
-                vsize = int((float(img.size[0] * base)))
-                img = img.resize((vsize, hsize), Image.ANTIALIAS)
-            #print("JPG old size: " + str(os.path.getsize(file_path)))
-            report.write(str(os.path.getsize(file_path)) + ';')
-            img.save(file_path, optimize=True, quality=compression)
-            #print("JPG new file size: " + str(os.path.getsize(file_path)))
-            #print("New resolution: " + str(img.size))
-            report.write(str(os.path.getsize(file_path)) + ';')
-            report.write(str(img.size).replace(', ', 'x') + '\n')
+                #print("JPG old size: " + str(os.path.getsize(file_path)))
+                report.write(str(os.path.getsize(file_path)) + ';')
+                img.save(file_path, optimize=True, quality=compression)
+                #print("JPG new file size: " + str(os.path.getsize(file_path)))
+                #print("New resolution: " + str(img.size))
+                report.write(str(os.path.getsize(file_path)) + ';')
+                report.write(str(img.size).replace(', ', 'x') + '\n')
 
-        elif image_type == 'gif':
-            report.write("GIF;" + str(img.size).replace(', ', 'x') + ';')
-            global gif_resize
-            if gif_resize == True:
-                base = resize_factor # e.g. 1 = original size, 0.5 = half size
-                hsize = int((float(img.size[1] * base)))
-                vsize = int((float(img.size[0] * base)))
-                img = img.resize((vsize, hsize), Image.ANTIALIAS)
-            #print("GIF old size: " + str(os.path.getsize(file_path)))
-            report.write(str(os.path.getsize(file_path)) + ';')
-            img.save(file_path, optimize=True, quality=compression)
-            #print("GIF new file size: " + str(os.path.getsize(file_path)))
-            #print("New resolution: " + str(img.size))
-            report.write(str(os.path.getsize(file_path)) + ';')
-            report.write(str(img.size).replace(', ', 'x') + '\n')
+            elif image_type == 'gif':
+                report.write("GIF;" + str(img.size).replace(', ', 'x') + ';')
+                global gif_resize
+                if gif_resize == True:
+                    base = resize_factor # e.g. 1 = original size, 0.5 = half size
+                    hsize = int((float(img.size[1] * base)))
+                    vsize = int((float(img.size[0] * base)))
+                    img = img.resize((vsize, hsize), Image.ANTIALIAS)
+                #print("GIF old size: " + str(os.path.getsize(file_path)))
+                report.write(str(os.path.getsize(file_path)) + ';')
+                img.save(file_path, optimize=True, quality=compression)
+                #print("GIF new file size: " + str(os.path.getsize(file_path)))
+                #print("New resolution: " + str(img.size))
+                report.write(str(os.path.getsize(file_path)) + ';')
+                report.write(str(img.size).replace(', ', 'x') + '\n')
+            else:
+                report.write('\n')
         else:
-            report.write('\n')
-    else:
-        report.write('This file was skipped due to resize settings;\n')
+            report.write('This file was skipped due to resize settings;\n')
+    except:
+        print("File format not supported - file may be corrupt")
+        report.write("\n")
 
 def adjustAudioVideo(file_path, file_type, report):
-    start_time = time.time()
-    if file_type == 'mp4':
-        report.write('mp4; ;')
-        report.write(str(os.path.getsize(file_path)) + ';')
-        video = subprocess.run('ffmpeg.exe -i %s -b %s %s -y' % (file_path, video_bitrate, file_path + '_new.mp4'))
-        os.remove(file_path)
-        os.rename(file_path + '_new.mp4', file_path)
-        #video_libx264 = subprocess.run('ffmpeg -i %s -vcodec libx264 -b %s %s -y' % (file_path, video_bitrate, file_path))
-        report.write(str(os.path.getsize(file_path)) + '\n')
-    elif file_type == 'mp3':
-        report.write('mp3; ;')
-        report.write(str(os.path.getsize(file_path)) + ';')
-        audio = subprocess.run('ffmpeg -i %s -map 0:a:0 -b:a %s %s' % (file_path, audio_bitrate, file_path + '_new.mp3'))
-        os.remove(file_path)
-        os.rename(file_path + '_new.mp3', file_path)
-        report.write(str(os.path.getsize(file_path)) + '\n')
-    # SCALE: -s 720x480
-    # SCALE based on input size (make it half)
-    # ffmpeg -i input.avi -vf scale="iw/2:ih/2" output.avi
-    print("--- Video converting time %s ---" % (time.time() - start_time))
+    try:
+        start_time = time.time()
+        if file_type == 'mp4':
+            report.write('mp4; ;')
+            report.write(str(os.path.getsize(file_path)) + ';')
+            video = subprocess.run('ffmpeg.exe -i %s -b %s %s -y' % (file_path, video_bitrate, file_path + '_new.mp4'))
+            os.remove(file_path)
+            os.rename(file_path + '_new.mp4', file_path)
+            #video_libx264 = subprocess.run('ffmpeg -i %s -vcodec libx264 -b %s %s -y' % (file_path, video_bitrate, file_path))
+            report.write(str(os.path.getsize(file_path)) + '\n')
+        elif file_type == 'mp3':
+            report.write('mp3; ;')
+            report.write(str(os.path.getsize(file_path)) + ';')
+            audio = subprocess.run('ffmpeg -i %s -map 0:a:0 -b:a %s %s' % (file_path, audio_bitrate, file_path + '_new.mp3'))
+            os.remove(file_path)
+            os.rename(file_path + '_new.mp3', file_path)
+            report.write(str(os.path.getsize(file_path)) + '\n')
+        # SCALE: -s 720x480
+        # SCALE based on input size (make it half)
+        # ffmpeg -i input.avi -vf scale="iw/2:ih/2" output.avi
+        print("--- Video converting time %s ---" % (time.time() - start_time))
+    except:
+        print("File format not supported - file may be corrupt")
+        report.write("\n")
 
 def checkImages(extracted_path, report):
     for root, directories, files in os.walk(extracted_path):
@@ -231,20 +225,35 @@ def zipNewPackage(dir_name, extension):
         print(f"Error building package - {os.path.basename(dir_name)}")
     os.chdir(current_cwd)
 
-def compressPackages(path, report):
+def compressPackages(path):
     for root, dirs, files in os.walk(path):
         for file in files:
             filedir = os.path.join(root, file)
             print(filedir)
             if file.endswith('.zip'):
-                #file_path = path + str(file)
                 extracted_path = extractScorm(filedir, "zip")
+
+                report_path = extracted_files_directory + '\\' + os.path.basename(extracted_path) + '_report.csv'
+                report = open(report_path, "w")
+                report.write(
+                    'drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
+
                 checkImages(extracted_path, report)
                 zipNewPackage(extracted_path, "zip")
+
+                report.close()
             elif file.endswith('.story'):
                 extracted_path = extractScorm(filedir, "story")
+
+                report_path = extracted_files_directory + '\\' + os.path.basename(extracted_path) + '_report.csv'
+                report = open(report_path, "w")
+                report.write(
+                    'drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
+
                 checkImages(extracted_path, report)
                 zipNewPackage(extracted_path, "story")
+
+                report.close()
 
 
     """    all_scorm_files = [f for f in listdir(path) if isfile(join(path, f))]
@@ -261,12 +270,13 @@ if __name__ == '__main__':
         os.makedirs(extracted_files_directory)
     except:
         print('Export directory is present.')
+
     try:
-        report_path = extracted_files_directory + '\\' + 'report.csv'
-        report = open(report_path, "w")
-        report.write('drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
-        compressPackages(path, report)
-        report.close()
+        #report_path = extracted_files_directory + '\\' + 'report.csv'
+        #report = open(report_path, "w")
+        #report.write('drive; file path;file type;original resolution;original file size;new file size;new resolution;\n')
+        compressPackages(path)
+        #report.close()
     except:
         print("WARNING: report.csv is in use! Please close file and try again.")
 
